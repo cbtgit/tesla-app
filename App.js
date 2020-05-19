@@ -2,6 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
 import { Platform, StatusBar, StyleSheet, View, TextInput, Button } from 'react-native';
+import { AsyncStorage } from 'react-native';
 
 import useCachedResources from './hooks/useCachedResources';
 import BottomTabNavigator from './navigation/BottomTabNavigator';
@@ -90,7 +91,6 @@ export default function App(props) {
         // We will also need to handle errors if sign in failed
         // After getting token, we need to persist the token using `AsyncStorage`
         // In the example, we'll use a dummy token
-
         const response = await fetch('https://owner-api.teslamotors.com/oauth/token', {
           method: 'POST',
           headers: new Headers({
@@ -106,6 +106,11 @@ export default function App(props) {
           }),
         });
         const result = await response.json();
+        try {
+          await AsyncStorage.setItem('userToken', result.access_token);
+        } catch (error) {
+          // Error saving data
+        }
         dispatch({ type: 'SIGN_IN', token: result.access_token });
       },
       signOut: () => dispatch({ type: 'SIGN_OUT' }),
@@ -124,6 +129,7 @@ export default function App(props) {
   if (!isLoadingComplete) {
     return null;
   } else {
+    console.log(state.userToken);
     return (
       <AuthContext.Provider value={authContext}>
         <View style={styles.container}>
