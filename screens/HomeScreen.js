@@ -2,52 +2,69 @@ import * as WebBrowser from 'expo-web-browser';
 import * as React from 'react';
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-
+import { useIdentity } from '../App';
 import { MonoText } from '../components/StyledText';
 
 export default function HomeScreen() {
+  const [vehicle, setVehicle] = React.useState();
+  const userToken = useIdentity();
+  React.useEffect(() => {
+    const getData = async () => {
+      const data = await fetch('https://owner-api.teslamotors.com/api/1/vehicles', {
+        method: 'GET',
+        headers: new Headers({
+          'User-Agent': 'Tesla_UA',
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + userToken,
+        }),
+      });
+
+      const json = await data.json();
+      const vehicles = json.response.map((x) => x);
+      const id = vehicles[0].id_s;
+      const vehicleState = vehicles[0].state;
+      console.log(vehicleState);
+      const wakeUpData = await fetch(
+        'https://owner-api.teslamotors.com/api/1/vehicles/' + id + '/wake_up',
+        {
+          method: 'POST',
+          headers: new Headers({
+            'User-Agent': 'Tesla_UA',
+            Authorization: 'Bearer ' + userToken,
+          }),
+        },
+      );
+      const wakeUpJson = await wakeUpData.json();
+      console.log(wakeUpJson);
+
+      const vehicleData = await fetch(
+        'https://owner-api.teslamotors.com/api/1/vehicles/' + id + '/vehicle_data',
+        {
+          method: 'GET',
+          headers: new Headers({
+            'User-Agent': 'Tesla_UA',
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + userToken,
+          }),
+        },
+      );
+
+      const vehicleJson = await vehicleData.json();
+      const vehicle = vehicleJson.response;
+      console.log(vehicle);
+      setVehicle(vehicle);
+    };
+
+    getData();
+  }, [userToken]);
+
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        <View style={styles.welcomeContainer}>
-          <Image
-            source={
-              __DEV__
-                ? require('../assets/images/robot-dev.png')
-                : require('../assets/images/robot-prod.png')
-            }
-            style={styles.welcomeImage}
-          />
-        </View>
-
-        <View style={styles.getStartedContainer}>
-          <DevelopmentModeNotice />
-
-          <Text style={styles.getStartedText}>Open dsasdf up the code for this screen:</Text>
-
-          <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
-            <MonoText>screens/HomeScreen.js</MonoText>
-          </View>
-
-          <Text style={styles.getStartedText}>
-            Change any of the text, save the file, anddasf your app will automatically reload.
-          </Text>
-        </View>
-
-        <View style={styles.helpContainer}>
-          <TouchableOpacity onPress={handleHelpPress} style={styles.helpLink}>
-            <Text style={styles.helpLinkText}>Help, it didn’t automatically reload!</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      <View style={styles.tabBarInfoContainer}>
-        <Text style={styles.tabBarInfoText}>This is a tab bar. You can edit it in:</Text>
-
-        <View style={[styles.codeHighlightContainer, styles.navigationFilename]}>
-          <MonoText style={styles.codeHighlightText}>navigation/BottomTabNavigator.js</MonoText>
-        </View>
-      </View>
+      <Text>{vehicle ? vehicle.display_name : null}</Text>
+      <Text>{vehicle ? vehicle.state : null}</Text>
+      <Text>{vehicle ? vehicle.charge_state.battery_level : null}</Text>
+      <Text>{vehicle ? vehicle.charge_state.battery_range : null}</Text>
+      <Text>{vehicle ? vehicle.climate_state.outside_temp : null}</Text>
     </View>
   );
 }
@@ -55,39 +72,6 @@ export default function HomeScreen() {
 HomeScreen.navigationOptions = {
   header: null,
 };
-
-function DevelopmentModeNotice() {
-  if (__DEV__) {
-    const learnMoreButton = (
-      <Text onPress={handleLearnMorePress} style={styles.helpLinkText}>
-        Learn more
-      </Text>
-    );
-
-    return (
-      <Text style={styles.developmentModeText}>
-        Development mode is enabled: your app will be slower but you can use useful development
-        tools. {learnMoreButton}
-      </Text>
-    );
-  } else {
-    return (
-      <Text style={styles.developmentModeText}>
-        You are not in development mode: your app will run at full speed.
-      </Text>
-    );
-  }
-}
-
-function handleLearnMorePress() {
-  WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/workflow/development-mode/');
-}
-
-function handleHelpPress() {
-  WebBrowser.openBrowserAsync(
-    'https://docs.expo.io/versions/latest/get-started/create-a-new-app/#making-your-first-change'
-  );
-}
 
 const styles = StyleSheet.create({
   container: {

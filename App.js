@@ -10,6 +10,13 @@ import LinkingConfiguration from './navigation/LinkingConfiguration';
 
 const Stack = createStackNavigator();
 const AuthContext = React.createContext();
+const UserContext = React.createContext();
+
+export function useIdentity() {
+  const user = React.useContext(UserContext);
+  return user;
+}
+
 const Login = () => {
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -78,9 +85,9 @@ export default function App(props) {
 
       // This will switch to the App screen or Auth screen and this loading
       // screen will be unmounted and thrown away.
+
       dispatch({ type: 'RESTORE_TOKEN', token: userToken });
     };
-
     bootstrapAsync();
   }, []);
 
@@ -114,14 +121,6 @@ export default function App(props) {
         dispatch({ type: 'SIGN_IN', token: result.access_token });
       },
       signOut: () => dispatch({ type: 'SIGN_OUT' }),
-      signUp: async (data) => {
-        // In a production app, we need to send user data to server and get a token
-        // We will also need to handle errors if sign up failed
-        // After getting token, we need to persist the token using `AsyncStorage`
-        // In the example, we'll use a dummy token
-
-        dispatch({ type: 'SIGN_IN', token: 'dummy-auth-token' });
-      },
     }),
     [],
   );
@@ -129,25 +128,31 @@ export default function App(props) {
   if (!isLoadingComplete) {
     return null;
   } else {
-    console.log(state.userToken);
     return (
       <AuthContext.Provider value={authContext}>
-        <View style={styles.container}>
-          {Platform.OS === 'ios' && <StatusBar barStyle="dark-content" />}
+        <UserContext.Provider value={state.userToken}>
+          <View style={styles.container}>
+            {Platform.OS === 'ios' && <StatusBar barStyle="dark-content" />}
 
-          <NavigationContainer linking={LinkingConfiguration}>
-            <Stack.Navigator>
-              {state.userToken ? (
-                <Stack.Screen name="Root" component={BottomTabNavigator} />
-              ) : (
-                <Stack.Screen name="Login" component={Login} />
-              )}
-            </Stack.Navigator>
-          </NavigationContainer>
-        </View>
+            <NavigationContainer linking={LinkingConfiguration}>
+              <Stack.Navigator>
+                {state.userToken ? (
+                  <Stack.Screen name="Root" component={BottomTabNavigator} />
+                ) : (
+                  <Stack.Screen name="Login" component={Login} />
+                )}
+              </Stack.Navigator>
+            </NavigationContainer>
+          </View>
+        </UserContext.Provider>
       </AuthContext.Provider>
     );
   }
+}
+
+export async function useToken() {
+  const token = await AsyncStorage.getItem('userToken');
+  return token;
 }
 
 const styles = StyleSheet.create({
