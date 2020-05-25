@@ -37,6 +37,7 @@ export default function HomeScreen() {
       const wakeUpJson = await wakeUpData.json();
       console.log(wakeUpJson);
 
+
       const vehicleData = await fetch(
         'https://owner-api.teslamotors.com/api/1/vehicles/' + id + '/vehicle_data',
         {
